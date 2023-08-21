@@ -1,0 +1,27 @@
+type Collection @entity {
+  id: ID!
+  thumbnail: String!
+  front: String!
+  back: String!
+  artists: [String!]!
+  class: String!
+  member: String!
+  season: String!
+  number: String!
+  objekts: [Objekt!]! @derivedFrom(field: "collection")
+}
+
+type Objekt @entity {
+  id: ID!
+  collection: Collection!
+  serial: Int!
+  transfers: [Transfer!]! @derivedFrom(field: "objekt")
+}
+
+type Transfer @entity {
+  id: ID!
+  objekt: Objekt!
+  from: String!
+  to: String!
+  timestamp: BigInt!
+}
