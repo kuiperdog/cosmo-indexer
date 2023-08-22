@@ -33,10 +33,16 @@ async function handleTransfer(ctx: Context, log: Log, entities: Map<string, Enti
 
     let objekt = await getEntity(Objekt, event.tokenId.toString(), ctx, entities);
     if (!objekt) {
-        ctx.log.info('Fetching metadata for token ' + event.tokenId.toString())
-        const res = await axios.get('https://api.cosmo.fans/objekt/v1/token/' + event.tokenId.toString())
-        if (!res || !res.data || !res.data.objekt) {
-            ctx.log.error('Failed fetching metadata for token ' + event.tokenId.toString())
+        let res
+        try {
+            res = await axios.get('https://api.cosmo.fans/objekt/v1/token/' + event.tokenId.toString())
+        } catch (err) {
+            ctx.log.warn('Failed to fetch metadata for token ' + event.tokenId.toString())
+            return
+        }
+
+        if (!res.data || !res.data.objekt) {
+            ctx.log.warn('Improper metadata for token ' + event.tokenId.toString())
             return
         }
         const metadata = res.data.objekt
