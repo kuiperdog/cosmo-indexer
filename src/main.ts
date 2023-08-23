@@ -2,9 +2,10 @@ import { Entity, TypeormDatabase } from '@subsquid/typeorm-store'
 import { Collection, Objekt, Transfer} from './model'
 import { events as objektEvents } from './abi/Objekt'
 import { processor } from './processor'
-import axios from 'axios'
+import axios, { AxiosResponse } from 'axios'
 
 axios.defaults.validateStatus = () => { return true }
+const MAX_REQUESTS = 3000
 
 processor.run(new TypeormDatabase({supportHotBlocks: true}), async (ctx) => {
     const entities: { [key: string]: Entity[] } = {
@@ -38,10 +39,13 @@ processor.run(new TypeormDatabase({supportHotBlocks: true}), async (ctx) => {
     }
 
     let objekts: Objekt[] = []
-    const requests = await Promise.all(entities[Objekt.name].map(objekt => {
-        return axios.get('https://api.cosmo.fans/objekt/v1/token/' + objekt.id)
-    }))
-    for (var i = 0; i < requests.length; i++) {
+    let requests: AxiosResponse[] = []
+    for (let i = 0; i < entities[Objekt.name].length; i += MAX_REQUESTS) {
+        requests.push(...await Promise.all(entities[Objekt.name].slice(i, i + MAX_REQUESTS).map(objekt => {
+            return axios.get('https://api.cosmo.fans/objekt/v1/token/' + objekt.id)
+        })))
+    }
+    for (let i = 0; i < requests.length; i++) {
         if (requests[i].status === 404 || !requests[i].data || requests[i].data.error) {
             ctx.log.warn('Failed to fetch metadata for Objekt ' + entities[Objekt.name][i].id)
             continue
