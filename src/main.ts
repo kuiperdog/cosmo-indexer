@@ -93,17 +93,17 @@ processor.run(new TypeormDatabase({supportHotBlocks: true}), async (ctx) => {
         }
 
         if (collections.length > 0) {
-            ctx.store.save(collections)
+            await ctx.store.save(collections)
             ctx.log.info('Saved collections: ' + collections.length)
         }
         if (newObjekts.length > 0) {
-            ctx.store.save(newObjekts)
+            await ctx.store.save(newObjekts)
             ctx.log.info('Saved Objekts: ' + newObjekts.length)
         }
     }
 
     if (transfers.length > 0) {
-        ctx.store.save(transfers)
+        await ctx.store.save(transfers)
         ctx.log.info('Saved transfers: ' + transfers.length)
     }
 })
