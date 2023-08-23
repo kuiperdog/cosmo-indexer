@@ -5,7 +5,7 @@ import { processor } from './processor'
 import axios, { AxiosResponse } from 'axios'
 
 axios.defaults.validateStatus = () => { return true }
-const MAX_REQUESTS = 3000
+const MAX_REQUESTS = 1000
 
 processor.run(new TypeormDatabase({supportHotBlocks: true}), async (ctx) => {
     const entities: { [key: string]: Entity[] } = {
