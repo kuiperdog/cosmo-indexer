@@ -1,4 +1,4 @@
-import { Entity, TypeormDatabase } from '@subsquid/typeorm-store'
+import { TypeormDatabase } from '@subsquid/typeorm-store'
 import { Collection, Objekt, Transfer} from './model'
 import { events as objektEvents } from './abi/Objekt'
 import { processor } from './processor'
@@ -10,15 +10,12 @@ const client = axios.create({
     validateStatus: () => { return true }
 })
 registerInterceptor(client)
-const MAX_REQUESTS = 100
+const MAX_REQUESTS = 500
 
 processor.run(new TypeormDatabase({supportHotBlocks: true}), async (ctx) => {
-    const entities: { [key: string]: Entity[] } = {
-        [Collection.name]: [],
-        [Objekt.name]: [],
-        [Transfer.name]: []
-    }
-    
+    const transfers: Transfer[] = []
+    const objekts: Objekt[] = []
+
     for (let block of ctx.blocks) {
         for (let log of block.logs) {
             if (log.topics[0] === objektEvents.Transfer.topic) {
@@ -32,75 +29,81 @@ processor.run(new TypeormDatabase({supportHotBlocks: true}), async (ctx) => {
                     timestamp: BigInt(log.block.timestamp)
                 })
                 if (!transfer.objekt) {
-                    let objekt = entities[Objekt.name].find(i => i.id === token) as Objekt
+                    let objekt = objekts.find(i => i.id === token) as Objekt
                     if (objekt)
                         objekt.transfers.push(transfer)
                     else
-                        entities[Objekt.name].push(new Objekt({id: token, transfers: [transfer]}))
+                        objekts.push(new Objekt({id: token, transfers: [transfer]}))
                 }
-                entities[Transfer.name].push(transfer)
+                transfers.push(transfer)
             }
         }
     }
 
-    let objekts: Objekt[] = []
-    let requests: AxiosResponse[] = []
-    for (let i = 0; i < entities[Objekt.name].length; i += MAX_REQUESTS) {
-        ctx.log.info('Fetching data for ' + Math.min(MAX_REQUESTS, entities[Objekt.name].length - i) + ' Objekts')
-        requests.push(...await Promise.all(entities[Objekt.name].slice(i, i + MAX_REQUESTS).map(objekt => {
+    for (let i = 0; i < objekts.length; i += MAX_REQUESTS) {
+        const batch: Objekt[] = objekts.slice(i, i + MAX_REQUESTS)
+        const collections: Collection[] = []
+        const newObjekts: Objekt[] = []
+
+        const requests: AxiosResponse[] = []
+        requests.push(...await Promise.all(batch.map(objekt => {
             return client.get('https://api.cosmo.fans/objekt/v1/token/' + objekt.id)
         })))
-    }
-    for (let i = 0; i < requests.length; i++) {
-        if (requests[i].status === 404 || !requests[i].data || !requests[i].data.objekt) {
-            ctx.log.warn('Failed to fetch metadata for Objekt ' + entities[Objekt.name][i].id)
-            continue
-        }
+        for (let i = 0; i < requests.length; i++) {
+            if (requests[i].status === 404 || !requests[i].data || !requests[i].data.objekt) {
+                ctx.log.warn('Failed to fetch metadata for Objekt ' + batch[i].id)
+                continue
+            }
 
-        const entry = entities[Objekt.name][i] as Objekt
-        const metadata = requests[i].data.objekt
+            const metadata = requests[i].data.objekt
+            const collectionId = metadata.collectionId.toLowerCase().replaceAll(' ', '-')
 
-        const collectionId = metadata.collectionId.toLowerCase().replaceAll(' ', '-')
-        let collection = await ctx.store.get(Collection, collectionId)
-        if (!collection)
-            collection = entities[Collection.name].find(e => e.id === collectionId) as Collection
-        if (!collection) {
-            collection = new Collection({
-                id: collectionId,
-                thumbnail: metadata.thumbnailImage,
-                front: metadata.frontImage,
-                back: metadata.backImage,
-                artists: metadata.artists,
-                class: metadata.class,
-                member: metadata.member,
-                season: metadata.season,
-                number: metadata.collectionNo,
-                objekts: []
+            let collection = await ctx.store.get(Collection, collectionId)
+            if (!collection)
+                collection = collections.find(e => e.id === collectionId)
+            if (!collection) {
+                collection = new Collection({
+                    id: collectionId,
+                    thumbnail: metadata.thumbnailImage,
+                    front: metadata.frontImage,
+                    back: metadata.backImage,
+                    artists: metadata.artists,
+                    class: metadata.class,
+                    member: metadata.member,
+                    season: metadata.season,
+                    number: metadata.collectionNo,
+                    objekts: []
+                })
+                collections.push(collection)
+            }
+
+            const objekt = new Objekt({
+                id: batch[i].id,
+                collection: collection,
+                serial: metadata.objektNo,
+                transfers: []
             })
-            entities[Collection.name].push(collection)
+
+            batch[i].transfers.forEach((transfer => {
+                const transferIndex = transfers.findIndex(t => t.id === transfer.id)
+                if (transferIndex !== -1)
+                    transfers[transferIndex].objekt = objekt
+            }))
+            newObjekts.push(objekt)
         }
 
-        const objekt = new Objekt({
-            id: entry.id,
-            collection: collection,
-            serial: metadata.objektNo,
-            transfers: []
-        })
-
-        entry.transfers.forEach((transfer => {
-            const transferIndex = entities[Transfer.name].findIndex(t => t.id === transfer.id)
-            if (transferIndex !== -1)
-                (entities[Transfer.name][transferIndex] as Transfer).objekt = objekt
-        }))
-        objekts.push(objekt)
+        if (collections.length > 0) {
+            ctx.store.save(collections)
+            ctx.log.info('Saved collections: ' + collections.length)
+        }
+        if (newObjekts.length > 0) {
+            ctx.store.save(newObjekts)
+            ctx.log.info('Saved Objekts: ' + newObjekts.length)
+        }
     }
-    entities[Objekt.name] = objekts
 
-    for (const key of Object.keys(entities)) {
-        const entries = entities[key]
-        if (entries.length > 0) {
-            await ctx.store.save(entries)
-            ctx.log.info('Saved ' + entries.length + ' entities of type ' + key)
-        }
+    if (transfers.length > 0) {
+        ctx.store.save(transfers)
+        ctx.log.info('Saved transfers: ' + transfers.length)
     }
 })
