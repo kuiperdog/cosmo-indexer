@@ -46,7 +46,7 @@ processor.run(new TypeormDatabase({supportHotBlocks: true}), async (ctx) => {
         })))
     }
     for (let i = 0; i < requests.length; i++) {
-        if (requests[i].status === 404 || !requests[i].data || requests[i].data.error) {
+        if (requests[i].status === 404 || !requests[i].data || !requests[i].data.objekt) {
             ctx.log.warn('Failed to fetch metadata for Objekt ' + entities[Objekt.name][i].id)
             continue
         }
