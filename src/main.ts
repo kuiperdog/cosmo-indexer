@@ -3,9 +3,14 @@ import { Collection, Objekt, Transfer} from './model'
 import { events as objektEvents } from './abi/Objekt'
 import { processor } from './processor'
 import axios, { AxiosResponse } from 'axios'
+require = require('esm')(module)
+import { registerInterceptor } from 'axios-cached-dns-resolve'
 
-axios.defaults.validateStatus = () => { return true }
-const MAX_REQUESTS = 1000
+const client = axios.create({
+    validateStatus: () => { return true }
+})
+registerInterceptor(client)
+const MAX_REQUESTS = 100
 
 processor.run(new TypeormDatabase({supportHotBlocks: true}), async (ctx) => {
     const entities: { [key: string]: Entity[] } = {
@@ -41,8 +46,9 @@ processor.run(new TypeormDatabase({supportHotBlocks: true}), async (ctx) => {
     let objekts: Objekt[] = []
     let requests: AxiosResponse[] = []
     for (let i = 0; i < entities[Objekt.name].length; i += MAX_REQUESTS) {
+        ctx.log.info('Fetching data for ' + Math.min(MAX_REQUESTS, entities[Objekt.name].length - i) + ' Objekts')
         requests.push(...await Promise.all(entities[Objekt.name].slice(i, i + MAX_REQUESTS).map(objekt => {
-            return axios.get('https://api.cosmo.fans/objekt/v1/token/' + objekt.id)
+            return client.get('https://api.cosmo.fans/objekt/v1/token/' + objekt.id)
         })))
     }
     for (let i = 0; i < requests.length; i++) {
