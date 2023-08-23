@@ -1,7 +1,7 @@
-import { Entity, EntityClass, TypeormDatabase } from '@subsquid/typeorm-store'
+import { Entity, TypeormDatabase } from '@subsquid/typeorm-store'
 import { Collection, Objekt, Transfer} from './model'
 import { events as objektEvents } from './abi/Objekt'
-import { Context, Log, processor } from './processor'
+import { processor } from './processor'
 import axios from 'axios'
 
 axios.defaults.validateStatus = () => { return true }
