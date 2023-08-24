@@ -1,7 +1,7 @@
 import { TypeormDatabase } from '@subsquid/typeorm-store'
 import { Collection, Objekt, Transfer} from './model'
 import { events as objektEvents } from './abi/Objekt'
-import { processor } from './processor'
+import { objektContracts, processor } from './processor'
 import axios, { AxiosResponse } from 'axios'
 require = require('esm')(module)
 import { registerInterceptor } from 'axios-cached-dns-resolve'
@@ -18,7 +18,7 @@ processor.run(new TypeormDatabase({supportHotBlocks: true}), async (ctx) => {
 
     for (let block of ctx.blocks) {
         for (let log of block.logs) {
-            if (log.topics[0] === objektEvents.Transfer.topic) {
+            if (objektContracts.includes(log.address) && log.topics[0] === objektEvents.Transfer.topic) {
                 const event = objektEvents.Transfer.decode(log)
                 const token = event.tokenId.toString()
                 const transfer = new Transfer({
