@@ -8,6 +8,7 @@ type Collection @entity {
   member: String!
   season: String!
   number: String!
+  textColor: String!
   objekts: [Objekt!]! @derivedFrom(field: "collection")
 }
 

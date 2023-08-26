@@ -34,6 +34,9 @@ export class Collection {
     @Column_("text", {nullable: false})
     number!: string
 
+    @Column_("text", {nullable: false})
+    textColor!: string
+
     @OneToMany_(() => Objekt, e => e.collection)
     objekts!: Objekt[]
 }
