@@ -20,7 +20,7 @@ export const processor = new EvmBatchProcessor()
         archive: lookupArchive('polygon'),
         chain: 'https://polygon-rpc.com',
     })
-    .setFinalityConfirmation(10)
+    .setFinalityConfirmation(200)
     .setBlockRange({
         from: 31385244,
     })
