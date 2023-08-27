@@ -15,12 +15,15 @@ export class Transfer {
     @ManyToOne_(() => Objekt, {nullable: true})
     objekt!: Objekt
 
+    @Index_()
     @Column_("text", {nullable: false})
     from!: string
 
+    @Index_()
     @Column_("text", {nullable: false})
     to!: string
 
+    @Index_()
     @Column_("numeric", {transformer: marshal.bigintTransformer, nullable: false})
     timestamp!: bigint
 }

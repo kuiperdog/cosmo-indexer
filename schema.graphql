@@ -4,12 +4,12 @@ type Collection @entity {
   front: String!
   back: String!
   artists: [String!]!
-  class: String!
-  member: String!
-  season: String!
-  number: String!
+  class: String! @index
+  member: String! @index
+  season: String! @index
+  number: String! @index
   textColor: String!
-  timestamp: BigInt!
+  timestamp: BigInt! @index
   objekts: [Objekt!]! @derivedFrom(field: "collection")
 }
 
@@ -23,7 +23,7 @@ type Objekt @entity {
 type Transfer @entity {
   id: ID!
   objekt: Objekt!
-  from: String!
-  to: String!
-  timestamp: BigInt!
+  from: String! @index
+  to: String! @index
+  timestamp: BigInt! @index
 }
