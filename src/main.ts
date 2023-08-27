@@ -76,6 +76,7 @@ processor.run(new TypeormDatabase({supportHotBlocks: true}), async (ctx) => {
                     season: metadata.season,
                     number: metadata.collectionNo,
                     textColor: metadata.textColor,
+                    timestamp: batch[i].transfers[0].timestamp,
                     objekts: []
                 })
                 collections.push(collection)

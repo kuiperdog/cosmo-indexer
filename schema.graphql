@@ -9,6 +9,7 @@ type Collection @entity {
   season: String!
   number: String!
   textColor: String!
+  timestamp: BigInt!
   objekts: [Objekt!]! @derivedFrom(field: "collection")
 }
 

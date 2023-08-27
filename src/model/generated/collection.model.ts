@@ -1,4 +1,5 @@
 import {Entity as Entity_, Column as Column_, PrimaryColumn as PrimaryColumn_, OneToMany as OneToMany_} from "typeorm"
+import * as marshal from "./marshal"
 import {Objekt} from "./objekt.model"
 
 @Entity_()
@@ -36,6 +37,9 @@ export class Collection {
 
     @Column_("text", {nullable: false})
     textColor!: string
+
+    @Column_("numeric", {transformer: marshal.bigintTransformer, nullable: false})
+    timestamp!: bigint
 
     @OneToMany_(() => Objekt, e => e.collection)
     objekts!: Objekt[]
