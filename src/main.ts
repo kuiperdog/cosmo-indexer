@@ -45,6 +45,7 @@ processor.run(new TypeormDatabase({supportHotBlocks: true}), async (ctx) => {
                 const event = governorEvents.Voted.decode(log)
                 votes.push(new Vote({
                     id: log.id,
+                    contract: log.address,
                     poll: event.pollId,
                     amount: event.comoAmount,
                     from: event.voter,

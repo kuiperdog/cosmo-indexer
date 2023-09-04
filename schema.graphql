@@ -30,6 +30,7 @@ type Transfer @entity {
 
 type Vote @entity {
   id: ID!
+  contract: String! @index
   poll: BigInt! @index
   amount: BigInt! @index
   from: String! @index

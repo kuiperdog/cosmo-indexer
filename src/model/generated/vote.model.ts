@@ -11,6 +11,10 @@ export class Vote {
     id!: string
 
     @Index_()
+    @Column_("text", {nullable: false})
+    contract!: string
+
+    @Index_()
     @Column_("numeric", {transformer: marshal.bigintTransformer, nullable: false})
     poll!: bigint
 
