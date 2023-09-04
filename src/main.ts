@@ -1,6 +1,7 @@
 import { TypeormDatabase } from '@subsquid/typeorm-store'
-import { Collection, Objekt, Transfer} from './model'
+import { Collection, Objekt, Transfer, Vote } from './model'
 import { events as objektEvents } from './abi/Objekt'
+import { events as governorEvents } from './abi/Governor'
 import { contracts, processor } from './processor'
 import axios, { AxiosResponse } from 'axios'
 require = require('esm')(module)
@@ -15,6 +16,7 @@ const MAX_REQUESTS = 500
 processor.run(new TypeormDatabase({supportHotBlocks: true}), async (ctx) => {
     const transfers: Transfer[] = []
     const objekts: Objekt[] = []
+    const votes: Vote[] = []
 
     for (let block of ctx.blocks) {
         for (let log of block.logs) {
@@ -39,6 +41,15 @@ processor.run(new TypeormDatabase({supportHotBlocks: true}), async (ctx) => {
                         objekts.push(new Objekt({id: token, transfers: [transfer]}))
                 }
                 transfers.push(transfer)
+            } else if (log.topics[0] === governorEvents.Voted.topic) {
+                const event = governorEvents.Voted.decode(log)
+                votes.push(new Vote({
+                    id: log.id,
+                    poll: event.pollId,
+                    amount: event.comoAmount,
+                    from: event.voter,
+                    timestamp: BigInt(log.block.timestamp)
+                }))
             }
         }
     }
@@ -110,5 +121,10 @@ processor.run(new TypeormDatabase({supportHotBlocks: true}), async (ctx) => {
     if (transfers.length > 0) {
         await ctx.store.save(transfers)
         ctx.log.info('Saved transfers: ' + transfers.length)
+    }
+
+    if (votes.length > 0) {
+        await ctx.store.save(votes)
+        ctx.log.info('Saved votes: ' + votes.length)
     }
 })

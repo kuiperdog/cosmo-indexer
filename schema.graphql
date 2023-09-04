@@ -27,3 +27,11 @@ type Transfer @entity {
   to: String! @index
   timestamp: BigInt! @index
 }
+
+type Vote @entity {
+  id: ID!
+  poll: BigInt! @index
+  amount: BigInt! @index
+  from: String! @index
+  timestamp: BigInt! @index
+}

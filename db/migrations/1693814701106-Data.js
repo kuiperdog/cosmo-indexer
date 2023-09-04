@@ -1,5 +1,5 @@
-module.exports = class Data1693105958072 {
-    name = 'Data1693105958072'
+module.exports = class Data1693814701106 {
+    name = 'Data1693814701106'
 
     async up(db) {
         await db.query(`CREATE TABLE "transfer" ("id" character varying NOT NULL, "from" text NOT NULL, "to" text NOT NULL, "timestamp" numeric NOT NULL, "objekt_id" character varying, CONSTRAINT "PK_fd9ddbdd49a17afcbe014401295" PRIMARY KEY ("id"))`)
@@ -15,6 +15,11 @@ module.exports = class Data1693105958072 {
         await db.query(`CREATE INDEX "IDX_81f585f60e03d2dc803d8a4945" ON "collection" ("season") `)
         await db.query(`CREATE INDEX "IDX_caa038e191d0099a8795fe4d35" ON "collection" ("number") `)
         await db.query(`CREATE INDEX "IDX_7ea39ec05f738471a3e62b4181" ON "collection" ("timestamp") `)
+        await db.query(`CREATE TABLE "vote" ("id" character varying NOT NULL, "poll" numeric NOT NULL, "amount" numeric NOT NULL, "from" text NOT NULL, "timestamp" numeric NOT NULL, CONSTRAINT "PK_2d5932d46afe39c8176f9d4be72" PRIMARY KEY ("id"))`)
+        await db.query(`CREATE INDEX "IDX_ca61f6c872c193ee5f8cd1f47e" ON "vote" ("poll") `)
+        await db.query(`CREATE INDEX "IDX_701e95fc921b4ca38caa9a4a2c" ON "vote" ("amount") `)
+        await db.query(`CREATE INDEX "IDX_8ea4539f32b721cfed8cb4796c" ON "vote" ("from") `)
+        await db.query(`CREATE INDEX "IDX_8d701dbd422ac5e3e1d7a9a0d1" ON "vote" ("timestamp") `)
         await db.query(`ALTER TABLE "transfer" ADD CONSTRAINT "FK_98d4c0e33193fdd3edfc826c37f" FOREIGN KEY ("objekt_id") REFERENCES "objekt"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`)
         await db.query(`ALTER TABLE "objekt" ADD CONSTRAINT "FK_cc0196669f13f5958a307824a2b" FOREIGN KEY ("collection_id") REFERENCES "collection"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`)
     }
@@ -33,6 +38,11 @@ module.exports = class Data1693105958072 {
         await db.query(`DROP INDEX "public"."IDX_81f585f60e03d2dc803d8a4945"`)
         await db.query(`DROP INDEX "public"."IDX_caa038e191d0099a8795fe4d35"`)
         await db.query(`DROP INDEX "public"."IDX_7ea39ec05f738471a3e62b4181"`)
+        await db.query(`DROP TABLE "vote"`)
+        await db.query(`DROP INDEX "public"."IDX_ca61f6c872c193ee5f8cd1f47e"`)
+        await db.query(`DROP INDEX "public"."IDX_701e95fc921b4ca38caa9a4a2c"`)
+        await db.query(`DROP INDEX "public"."IDX_8ea4539f32b721cfed8cb4796c"`)
+        await db.query(`DROP INDEX "public"."IDX_8d701dbd422ac5e3e1d7a9a0d1"`)
         await db.query(`ALTER TABLE "transfer" DROP CONSTRAINT "FK_98d4c0e33193fdd3edfc826c37f"`)
         await db.query(`ALTER TABLE "objekt" DROP CONSTRAINT "FK_cc0196669f13f5958a307824a2b"`)
     }
