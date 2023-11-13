@@ -90,7 +90,8 @@ async function processObjektTransfer(log: Log, data: Map<string, Entity[]>, stor
         objekt = new Objekt({ id: token });
 
     (objekt as Objekt).owner = event.to
-    data.get(Objekt.name)?.push(objekt)
+    if (!data.get(Objekt.name)?.find(i => i.id === token))
+        data.get(Objekt.name)?.push(objekt)
 
     const transfer = new Transfer({
         id: log.id,
