@@ -24,18 +24,18 @@ getContracts(processor)
 
             for (let block of ctx.blocks) {
                 for (let log of block.logs) {
-                    if (!contracts.includes(log.address))
-                        continue
-
                     switch (log.topics[0]) {
                         case objektContract.events.Transfer.topic:
-                            await processObjektTransfer(log, entities, ctx.store)
+                            if (contracts.Objekt.includes(log.address))
+                                await processObjektTransfer(log, entities, ctx.store)
                             break
                         case governorContract.events.Voted.topic:
-                            await processVote(log, entities)
+                            if (contracts.Governor.includes(log.address))
+                                await processVote(log, entities)
                             break
                         case comoContract.events.Transfer.topic:
-                            await processComoTransfer(log, entities, ctx.store)
+                            if (contracts.Como.includes(log.address))
+                                await processComoTransfer(log, entities, ctx.store)
                             break
                         default:
                             break
@@ -43,15 +43,14 @@ getContracts(processor)
                 }
 
                 for (let transaction of block.transactions) {
-                    if (!contracts.includes(transaction.to!))
-                        continue
-
                     switch (transaction.sighash) {
                         case objektContract.functions.batchUpdateObjektTransferrability.sighash:
-                            await processTransferabilityUpdate(transaction, entities, ctx.store)
+                            if (contracts.Objekt.includes(transaction.to))
+                                await processTransferabilityUpdate(transaction, entities, ctx.store)
                             break
                         case governorContract.functions.reveal.sighash:
-                            await processReveal(transaction, entities, ctx.store)
+                            if (contracts.Governor.includes(transaction.to))
+                                await processReveal(transaction, entities, ctx.store)
                             break
                         default:
                             break

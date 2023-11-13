@@ -33,34 +33,39 @@ export const processor = new EvmBatchProcessor()
         }
     })
 
-export async function getContracts(processor: EvmBatchProcessor): Promise<String[]> {
+export async function getContracts(processor: EvmBatchProcessor): Promise<any> {
     const artists = await axios.get('https://api.cosmo.fans/artist/v1')
+
+    const contracts = artists.data.artists.reduce((acc: any, artist: any) => {
+        Object.keys(artist.contracts).forEach(key => {
+          acc[key] = [...(acc[key] || []), artist.contracts[key].toLowerCase()]
+        })
+        return acc
+    }, {})
 
     processor
         .addLog({
-            address: artists.data.artists.map((a: any) => a.contracts.Objekt),
+            address: contracts.Objekt,
             topic0: [Objekt.events.Transfer.topic]
         })
         .addTransaction({
-            to: artists.data.artists.map((a: any) => a.contracts.Objekt),
+            to: contracts.Objekt,
             sighash: [Objekt.functions.batchUpdateObjektTransferrability.sighash]
         })
         .addLog({
-            address: artists.data.artists.map((a: any) => a.contracts.Governor),
+            address: contracts.Governor,
             topic0: [Governor.events.Voted.topic]
         })
         .addTransaction({
-            to: artists.data.artists.map((a: any) => a.contracts.Governor),
+            to: contracts.Governor,
             sighash: [Governor.functions.reveal.sighash]
         })
         .addLog({
-            address: artists.data.artists.map((a: any) => a.contracts.Como),
+            address: contracts.Como,
             topic0: [ERC20.events.Transfer.topic]
         })
     
-    return artists.data.artists.reduce((i: String[], a: any) => 
-        [...i].concat(Object.values(a.contracts).map((c: any) => c.toLowerCase())), 
-    [])
+    return contracts
 } 
 
 export type Fields = EvmBatchProcessorFields<typeof processor>
