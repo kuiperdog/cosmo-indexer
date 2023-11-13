@@ -1,8 +1,10 @@
-import { TypeormDatabase } from '@subsquid/typeorm-store'
-import { Collection, Objekt, Transfer, Vote } from './model'
-import { events as objektEvents } from './abi/Objekt'
-import { events as governorEvents } from './abi/Governor'
-import { contracts, processor } from './processor'
+import { Entity, Store, TypeormDatabase } from '@subsquid/typeorm-store'
+import { Logger } from '@subsquid/logger'
+import { processor, getContracts, Transaction, Log } from './processor'
+import { Collection, Objekt, Transfer, Vote, Como } from './model'
+import * as objektContract from './abi/Objekt'
+import * as governorContract from './abi/Governor'
+import * as comoContract from './abi/ERC20'
 import axios, { AxiosResponse } from 'axios'
 require = require('esm')(module)
 import { registerInterceptor } from 'axios-cached-dns-resolve'
@@ -11,121 +13,279 @@ const client = axios.create({
     validateStatus: () => { return true }
 })
 registerInterceptor(client)
+
 const MAX_REQUESTS = 500
+const NULL_ADDRESS = '0x0000000000000000000000000000000000000000'
 
-processor.run(new TypeormDatabase({supportHotBlocks: true}), async (ctx) => {
-    const transfers: Transfer[] = []
-    const objekts: Objekt[] = []
-    const votes: Vote[] = []
+getContracts(processor)
+    .then(contracts => {
+        processor.run(new TypeormDatabase({supportHotBlocks: true}), async (ctx) => {
+            const entities = new Map<string, Entity[]>()
 
-    for (let block of ctx.blocks) {
-        for (let log of block.logs) {
-            if (!contracts.includes(log.address))
-                continue
-            
-            if (log.topics[0] === objektEvents.Transfer.topic) {
-                const event = objektEvents.Transfer.decode(log)
-                const token = event.tokenId.toString()
-                const transfer = new Transfer({
-                    id: log.id,
-                    objekt: await ctx.store.get(Objekt, token),
-                    to: event.to,
-                    from: event.from,
-                    timestamp: BigInt(log.block.timestamp)
-                })
-                if (!transfer.objekt) {
-                    let objekt = objekts.find(i => i.id === token) as Objekt
-                    if (objekt)
-                        objekt.transfers.push(transfer)
-                    else
-                        objekts.push(new Objekt({id: token, transfers: [transfer]}))
+            for (let block of ctx.blocks) {
+                for (let log of block.logs) {
+                    if (!contracts.includes(log.address))
+                        continue
+
+                    switch (log.topics[0]) {
+                        case objektContract.events.Transfer.topic:
+                            await processObjektTransfer(log, entities, ctx.store)
+                            break
+                        case governorContract.events.Voted.topic:
+                            await processVote(log, entities)
+                            break
+                        case comoContract.events.Transfer.topic:
+                            await processComoTransfer(log, entities, ctx.store)
+                            break
+                        default:
+                            break
+                    }
                 }
-                transfers.push(transfer)
-            } else if (log.topics[0] === governorEvents.Voted.topic) {
-                const event = governorEvents.Voted.decode(log)
-                votes.push(new Vote({
+
+                for (let transaction of block.transactions) {
+                    if (!contracts.includes(transaction.to!))
+                        continue
+
+                    switch (transaction.sighash) {
+                        case objektContract.functions.batchUpdateObjektTransferrability.sighash:
+                            await processTransferabilityUpdate(transaction, entities, ctx.store)
+                            break
+                        case governorContract.functions.reveal.sighash:
+                            await processReveal(transaction, entities, ctx.store)
+                            break
+                        default:
+                            break
+                    }
+                }
+            }
+
+            await populateData(entities, ctx.store, ctx.log)
+
+            for (let [type, data] of entities.entries()) {
+                if (data.length)
+                    ctx.log.info(`Saved ${data.length} entities of type "${type}"`)
+                else
+                    ctx.log.info(`Saved 1 ${type} entity with ID "${data[0].id}"`)
+
+                await ctx.store.save(data)
+            }
+        })
+    })
+
+async function processObjektTransfer(log: Log, data: Map<string, Entity[]>, store: Store) {
+    const event = objektContract.events.Transfer.decode(log)
+    const token = event.tokenId.toString()
+
+    if (!data.has(Objekt.name))
+        data.set(Objekt.name, [])
+
+    let objekt = data.get(Objekt.name)?.find(i => i.id === token)
+    if (!objekt)
+        objekt = await store.get(Objekt, token)
+    if (!objekt)
+        objekt = new Objekt({ id: token });
+
+    (objekt as Objekt).owner = event.to
+    data.get(Objekt.name)?.push(objekt)
+
+    const transfer = new Transfer({
+        id: log.id,
+        objekt: objekt as Objekt,
+        to: event.to,
+        from: event.from,
+        timestamp: BigInt(log.block.timestamp)
+    })
+
+    if (data.has(Transfer.name))
+        data.get(Transfer.name)?.push(transfer)
+    else
+        data.set(Transfer.name, [transfer])
+}
+
+async function processVote(log: Log, data: Map<string, Entity[]>) {
+    const event = governorContract.events.Voted.decode(log)
+
+    const vote = new Vote({
+        id: log.id,
+        from: event.voter,
+        contract: log.address,
+        poll: event.pollId,
+        index: event.voteIndex,
+        amount: event.comoAmount,
+        timestamp: BigInt(log.block.timestamp)
+    })
+
+    if (data.has(Vote.name))
+        data.get(Vote.name)?.push(vote)
+    else
+        data.set(Vote.name, [vote])
+}
+
+async function processComoTransfer(log: Log, data: Map<string, Entity[]>, store: Store) {
+    const event = comoContract.events.Transfer.decode(log)
+
+    if (!data.has(Como.name))
+        data.set(Como.name, [])
+    
+    if (event.from !== NULL_ADDRESS) {
+        let entry = data.get(Como.name)?.find(c => {
+            (c as Como).contract === log.address && (c as Como).owner === event.from
+        })
+
+        if (entry) {
+            (entry as Como).balance = BigInt(Math.min(0, Number((entry as Como).balance - event.value)))
+        } else {
+            entry = await store.findOneBy(Como, { contract: log.address, owner: event.from })
+
+            if (entry) {
+                (entry as Como).balance = BigInt(Math.min(0, Number((entry as Como).balance - event.value)))
+                data.get(Como.name)?.push(entry)
+            } else { 
+                data.get(Como.name)?.push(new Como({
                     id: log.id,
                     contract: log.address,
-                    poll: event.pollId,
-                    amount: event.comoAmount,
-                    from: event.voter,
-                    timestamp: BigInt(log.block.timestamp)
+                    owner: event.from,
+                    balance: BigInt(0)
                 }))
             }
         }
     }
 
-    for (let i = 0; i < objekts.length; i += MAX_REQUESTS) {
-        const batch: Objekt[] = objekts.slice(i, i + MAX_REQUESTS)
-        const collections: Collection[] = []
-        const newObjekts: Objekt[] = []
+    if (event.to !== NULL_ADDRESS) {
+        let entry = data.get(Como.name)?.find(c => {
+            (c as Como).contract === log.address && (c as Como).owner === event.to
+        })
+
+        if (entry) {
+            (entry as Como).balance = (entry as Como).balance + event.value
+        } else {
+            entry = await store.findOneBy(Como, { contract: log.address, owner: event.to })
+
+            if (entry) {
+                (entry as Como).balance = (entry as Como).balance + event.value
+                data.get(Como.name)?.push(entry)
+            } else { 
+                data.get(Como.name)?.push(new Como({
+                    id: log.id,
+                    contract: log.address,
+                    owner: event.to,
+                    balance: event.value
+                }))
+            }
+        }
+    }
+}
+
+async function processTransferabilityUpdate(txn: Transaction, data: Map<string, Entity[]>, store: Store) {
+    const method = objektContract.functions.batchUpdateObjektTransferrability.decode(txn.input)
+
+    if (!data.has(Objekt.name))
+        data.set(Objekt.name, [])
+    
+    for (let token of method.tokenIds) {
+        let objekt = data.get(Objekt.name)?.find(o => o.id === Number(token).toString())
+        if (objekt) {
+            (objekt as Objekt).transferrable = method.transferrable
+        } else {
+            objekt = await store.get(Objekt, Number(token).toString())
+            if (objekt) {
+                (objekt as Objekt).transferrable = method.transferrable
+                data.get(Objekt.name)?.push(objekt)
+            }
+        }
+    }
+}
+
+async function processReveal(txn: Transaction, data: Map<string, Entity[]>, store: Store) {
+    const method = governorContract.functions.reveal.decode(txn.input)
+
+    if (!data.has(Vote.name))
+        data.set(Vote.name, [])
+
+    for (let i = 0; i < method.data.length; i++) {
+        let vote = data.get(Vote.name)?.find(v => {
+            (v as Vote).contract === txn.to &&
+            (v as Vote).index === method.offset + BigInt(i) &&
+            (v as Vote).poll === method.pollId
+        })
+
+        if (vote) {
+            (vote as Vote).candidate = Number(method.data[i].votedCandidateId)
+        } else {
+            vote = await store.findOneBy(Vote, {
+                contract: txn.to,
+                index: method.offset + BigInt(i),
+                poll: method.pollId
+            })
+            if (vote) {
+                (vote as Vote).candidate = Number(method.data[i].votedCandidateId)
+                data.get(Vote.name)?.push(vote)
+            }
+        }
+    }
+}
+
+async function populateData(data: Map<string, Entity[]>, store: Store, logger: Logger) {
+    if (!data.has(Objekt.name))
+        return
+
+    const unpopulated = data.get(Objekt.name)?.filter(o => !(o as Objekt).collection)
+
+    for (let i = 0; i < unpopulated!.length; i += MAX_REQUESTS) {
+        const batch = unpopulated!.slice(i, i + MAX_REQUESTS)
 
         const requests: AxiosResponse[] = []
-        requests.push(...await Promise.all(batch.map(objekt => {
-            return client.get('https://api.cosmo.fans/objekt/v1/token/' + objekt.id)
+        requests.push(...await Promise.all(batch.map(o => {
+            return client.get(`https://api.cosmo.fans/objekt/v1/token/${o.id}`)
         })))
+
         for (let i = 0; i < requests.length; i++) {
             if (requests[i].status === 404 || !requests[i].data || !requests[i].data.objekt) {
-                ctx.log.warn('Failed to fetch metadata for Objekt ' + batch[i].id)
+                logger.warn(`Failed to fetch metadata for Objekt of ID ${batch[i].id}`)
                 continue
             }
 
             const metadata = requests[i].data.objekt
             const collectionId = metadata.collectionId.toLowerCase().replaceAll(' ', '-')
 
-            let collection = await ctx.store.get(Collection, collectionId)
+            let collection: Collection | undefined
+            
+            if (data.has(Collection.name))
+                collection = data.get(Collection.name)?.find(collectionId)
             if (!collection)
-                collection = collections.find(e => e.id === collectionId)
+                collection = await store.get(Collection, collectionId)
+
             if (!collection) {
                 collection = new Collection({
                     id: collectionId,
+                    artists: metadata.artists,
+                    member: metadata.member,
+                    season: metadata.season,
+                    class: metadata.class,
+                    number: metadata.collectionNo,
                     thumbnail: metadata.thumbnailImage,
                     front: metadata.frontImage,
                     back: metadata.backImage,
-                    artists: metadata.artists,
-                    class: metadata.class,
-                    member: metadata.member,
-                    season: metadata.season,
-                    number: metadata.collectionNo,
                     textColor: metadata.textColor,
-                    timestamp: batch[i].transfers[0].timestamp,
-                    objekts: []
+                    timestamp: (data.get(Transfer.name)?.find(t => (t as Transfer).objekt.id === batch[i].id) as Transfer).timestamp
                 })
-                collections.push(collection)
+                if (data.has(Collection.name))
+                    data.get(Collection.name)?.push(collection)
+                else
+                    data.set(Collection.name, [collection])
             }
 
             const objekt = new Objekt({
-                id: batch[i].id,
+                ...batch[i],
                 collection: collection,
                 serial: metadata.objektNo,
-                transfers: []
+                transferrable: metadata.transferable
             })
 
-            batch[i].transfers.forEach((transfer => {
-                const transferIndex = transfers.findIndex(t => t.id === transfer.id)
-                if (transferIndex !== -1)
-                    transfers[transferIndex].objekt = objekt
-            }))
-            newObjekts.push(objekt)
-        }
-
-        if (collections.length > 0) {
-            await ctx.store.save(collections)
-            ctx.log.info('Saved collections: ' + collections.length)
-        }
-        if (newObjekts.length > 0) {
-            await ctx.store.save(newObjekts)
-            ctx.log.info('Saved Objekts: ' + newObjekts.length)
+            for (const transfer of data.get(Transfer.name)?.filter(t => (t as Transfer).objekt.id === batch[i].id)!)
+                (transfer as Transfer).objekt = objekt
+            
+            data.get(Objekt.name)![data.get(Objekt.name)?.findIndex(o => o.id === batch[i].id)!] = objekt
         }
     }
-
-    if (transfers.length > 0) {
-        await ctx.store.save(transfers)
-        ctx.log.info('Saved transfers: ' + transfers.length)
-    }
-
-    if (votes.length > 0) {
-        await ctx.store.save(votes)
-        ctx.log.info('Saved votes: ' + votes.length)
-    }
-})
+}

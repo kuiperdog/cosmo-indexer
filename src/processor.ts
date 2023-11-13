@@ -10,15 +10,8 @@ import {
 import {Store} from '@subsquid/typeorm-store'
 import * as Objekt from './abi/Objekt'
 import * as Governor from './abi/Governor'
-
-const objektContracts: string[] = [
-    '0xA4B37bE40F7b231Ee9574c4b16b7DDb7EAcDC99B',
-    '0x0fB69F54bA90f17578a59823E09e5a1f8F3FA200'
-]
-const governorContracts: string[] = [
-    '0xc3E5ad11aE2F00c740E74B81f134426A3331D950',
-    '0x8466e6E218F0fe438Ac8f403f684451D20E59Ee3'
-]
+import * as ERC20 from './abi/ERC20'
+import axios from 'axios'
 
 export const processor = new EvmBatchProcessor()
     .setDataSource({
@@ -32,24 +25,43 @@ export const processor = new EvmBatchProcessor()
     .setFields({
         evmLog: {
             topics: true,
-            data: true,
+            data: true
         },
         transaction: {
-            hash: true,
-        },
-    })
-    .addLog({
-        address: objektContracts,
-        topic0: [Objekt.events.Transfer.topic],
-        transaction: true,
-    })
-    .addLog({
-        address: governorContracts,
-        topic0: [Governor.events.Voted.topic],
-        transaction: true
+            sighash: true,
+            input: true
+        }
     })
 
-export const contracts: string[] = [...objektContracts, ...governorContracts].map(contract => contract.toLowerCase())
+export async function getContracts(processor: EvmBatchProcessor): Promise<String[]> {
+    const artists = await axios.get('https://api.cosmo.fans/artist/v1')
+
+    processor
+        .addLog({
+            address: artists.data.artists.map((a: any) => a.contracts.Objekt),
+            topic0: [Objekt.events.Transfer.topic]
+        })
+        .addTransaction({
+            to: artists.data.artists.map((a: any) => a.contracts.Objekt),
+            sighash: [Objekt.functions.batchUpdateObjektTransferrability.sighash]
+        })
+        .addLog({
+            address: artists.data.artists.map((a: any) => a.contracts.Governor),
+            topic0: [Governor.events.Voted.topic]
+        })
+        .addTransaction({
+            to: artists.data.artists.map((a: any) => a.contracts.Governor),
+            sighash: [Governor.functions.reveal.sighash]
+        })
+        .addLog({
+            address: artists.data.artists.map((a: any) => a.contracts.Como),
+            topic0: [ERC20.events.Transfer.topic]
+        })
+    
+    return artists.data.artists.reduce((i: String[], a: any) => {
+        [...i, ...a.contracts.values().map((c: String) => c.toLowerCase())]
+    }, [])
+} 
 
 export type Fields = EvmBatchProcessorFields<typeof processor>
 export type Context = DataHandlerContext<Store, Fields>
