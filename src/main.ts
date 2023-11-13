@@ -250,7 +250,7 @@ async function populateData(data: Map<string, Entity[]>, store: Store, logger: L
             let collection: Collection | undefined
             
             if (data.has(Collection.name))
-                collection = data.get(Collection.name)?.find(collectionId)
+                collection = data.get(Collection.name)?.find(c => c.id === collectionId) as Collection
             if (!collection)
                 collection = await store.get(Collection, collectionId)
 
