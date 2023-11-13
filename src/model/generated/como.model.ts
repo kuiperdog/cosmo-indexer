@@ -10,6 +10,7 @@ export class Como {
     @PrimaryColumn_()
     id!: string
 
+    @Index_()
     @Column_("text", {nullable: false})
     contract!: string
 

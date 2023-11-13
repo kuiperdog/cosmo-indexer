@@ -41,7 +41,7 @@ type Vote @entity {
 
 type Como @entity {
   id: ID!
-  contract: String!
+  contract: String! @index
   owner: String! @index
   balance: BigInt!
 }
