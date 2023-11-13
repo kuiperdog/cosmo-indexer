@@ -83,14 +83,16 @@ async function processObjektTransfer(log: Log, data: Map<string, Entity[]>, stor
     if (!data.has(Objekt.name))
         data.set(Objekt.name, [])
 
-    let objekt = data.get(Objekt.name)?.find(i => i.id === token)
-    if (!objekt)
-        objekt = await store.get(Objekt, token)
-    if (!objekt)
-        objekt = new Objekt({ id: token });
+    const objekt = data.get(Objekt.name)?.find(i => i.id === token) as Objekt
+        || await store.get(Objekt, token)
+        || new Objekt({ id: token })
 
-    (objekt as Objekt).owner = event.to
-    if (!data.get(Objekt.name)?.find(i => i.id === token))
+    objekt.owner = event.to
+    
+    const savedIndex = data.get(Objekt.name)?.findIndex(i => i.id === token)!
+    if (savedIndex > -1)
+        (data.get(Objekt.name)![savedIndex] as Objekt).owner = objekt.owner
+    else
         data.get(Objekt.name)?.push(objekt)
 
     const transfer = new Transfer({
