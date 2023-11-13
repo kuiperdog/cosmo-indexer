@@ -60,13 +60,18 @@ getContracts(processor)
 
             await populateData(entities, ctx.store, ctx.log)
 
-            for (let [type, data] of entities.entries()) {
-                if (data.length)
-                    ctx.log.info(`Saved ${data.length} entities of type "${type}"`)
-                else
-                    ctx.log.info(`Saved 1 ${type} entity with ID "${data[0].id}"`)
+            const hierarchy = [ Collection.name, Objekt.name, Transfer.name ]
+            for (let key of new Set([ ...hierarchy, ...entities.keys() ])) {
+                if (!entities.has(key))
+                    continue
 
+                const data = entities.get(key)!
                 await ctx.store.save(data)
+
+                if (data.length)
+                    ctx.log.info(`Saved ${data.length} entities of type "${key}"`)
+                else
+                    ctx.log.info(`Saved 1 ${key} entity with ID "${data[0].id}"`)
             }
         })
     })
