@@ -58,9 +58,9 @@ export async function getContracts(processor: EvmBatchProcessor): Promise<String
             topic0: [ERC20.events.Transfer.topic]
         })
     
-    return artists.data.artists.reduce((i: String[], a: any) => {
-        [...i, ...a.contracts.values().map((c: String) => c.toLowerCase())]
-    }, [])
+    return artists.data.artists.reduce((i: String[], a: any) => 
+        [...i].concat(Object.values(a.contracts).map((c: any) => c.toLowerCase())), 
+    [])
 } 
 
 export type Fields = EvmBatchProcessorFields<typeof processor>
