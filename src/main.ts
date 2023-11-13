@@ -246,6 +246,10 @@ async function populateData(data: Map<string, Entity[]>, store: Store, logger: L
         for (let i = 0; i < requests.length; i++) {
             if (requests[i].status === 404 || !requests[i].data || !requests[i].data.objekt) {
                 logger.warn(`Failed to fetch metadata for Objekt of ID ${batch[i].id}`)
+
+                data.set(Objekt.name, data.get(Objekt.name)?.filter(o => o.id !== batch[i].id)!)
+                data.set(Transfer.name, data.get(Transfer.name)?.filter(t => (t as Transfer).objekt.id !== batch[i].id)!)
+
                 continue
             }
 
