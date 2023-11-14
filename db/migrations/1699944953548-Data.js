@@ -1,5 +1,5 @@
-module.exports = class Data1699868698651 {
-    name = 'Data1699868698651'
+module.exports = class Data1699944953548 {
+    name = 'Data1699944953548'
 
     async up(db) {
         await db.query(`CREATE TABLE "collection" ("id" character varying NOT NULL, "artists" text array NOT NULL, "member" text NOT NULL, "season" text NOT NULL, "class" text NOT NULL, "number" text NOT NULL, "thumbnail" text NOT NULL, "front" text NOT NULL, "back" text NOT NULL, "text_color" text NOT NULL, "timestamp" numeric NOT NULL, CONSTRAINT "PK_ad3f485bbc99d875491f44d7c85" PRIMARY KEY ("id"))`)
@@ -8,7 +8,7 @@ module.exports = class Data1699868698651 {
         await db.query(`CREATE INDEX "IDX_d01899107849250643b52f2324" ON "collection" ("class") `)
         await db.query(`CREATE INDEX "IDX_caa038e191d0099a8795fe4d35" ON "collection" ("number") `)
         await db.query(`CREATE INDEX "IDX_7ea39ec05f738471a3e62b4181" ON "collection" ("timestamp") `)
-        await db.query(`CREATE TABLE "objekt" ("id" character varying NOT NULL, "serial" integer NOT NULL, "transferrable" boolean NOT NULL, "owner" text NOT NULL, "collection_id" character varying, CONSTRAINT "PK_a50fda223abd7f6ae55f2cf629f" PRIMARY KEY ("id"))`)
+        await db.query(`CREATE TABLE "objekt" ("id" character varying NOT NULL, "serial" integer, "transferrable" boolean, "owner" text, "collection_id" character varying, CONSTRAINT "PK_a50fda223abd7f6ae55f2cf629f" PRIMARY KEY ("id"))`)
         await db.query(`CREATE INDEX "IDX_cc0196669f13f5958a307824a2" ON "objekt" ("collection_id") `)
         await db.query(`CREATE INDEX "IDX_d2ddf18405b46538e169ab03e8" ON "objekt" ("owner") `)
         await db.query(`CREATE TABLE "transfer" ("id" character varying NOT NULL, "from" text NOT NULL, "to" text NOT NULL, "timestamp" numeric NOT NULL, "objekt_id" character varying, CONSTRAINT "PK_fd9ddbdd49a17afcbe014401295" PRIMARY KEY ("id"))`)

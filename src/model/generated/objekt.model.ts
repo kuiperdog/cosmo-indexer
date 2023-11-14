@@ -12,15 +12,15 @@ export class Objekt {
 
     @Index_()
     @ManyToOne_(() => Collection, {nullable: true})
-    collection!: Collection
+    collection!: Collection | undefined | null
 
-    @Column_("int4", {nullable: false})
-    serial!: number
+    @Column_("int4", {nullable: true})
+    serial!: number | undefined | null
 
-    @Column_("bool", {nullable: false})
-    transferrable!: boolean
+    @Column_("bool", {nullable: true})
+    transferrable!: boolean | undefined | null
 
     @Index_()
-    @Column_("text", {nullable: false})
-    owner!: string
+    @Column_("text", {nullable: true})
+    owner!: string | undefined | null
 }

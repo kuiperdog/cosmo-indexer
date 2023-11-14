@@ -14,10 +14,10 @@ type Collection @entity {
 
 type Objekt @entity {
   id: ID!
-  collection: Collection!
-  serial: Int!
-  transferrable: Boolean!
-  owner: String! @index
+  collection: Collection
+  serial: Int
+  transferrable: Boolean
+  owner: String @index
 }
 
 type Transfer @entity {
