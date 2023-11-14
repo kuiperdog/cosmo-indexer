@@ -12,6 +12,7 @@
     "@subsquid/typeorm-store": "^1.2.4",
     "axios": "^1.6.1",
     "axios-cached-dns-resolve": "^3.3.0",
+    "axios-retry": "^3.8.1",
     "dotenv": "^16.3.1",
     "esm": "^3.2.25",
     "ethers": "^6.8.1",

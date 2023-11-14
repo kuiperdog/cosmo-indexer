@@ -6,6 +6,7 @@ import * as objektContract from './abi/Objekt'
 import * as governorContract from './abi/Governor'
 import * as comoContract from './abi/ERC20'
 import axios, { AxiosResponse } from 'axios'
+import axiosRetry from 'axios-retry'
 require = require('esm')(module)
 import { registerInterceptor } from 'axios-cached-dns-resolve'
 
@@ -13,6 +14,7 @@ const client = axios.create({
     validateStatus: () => { return true }
 })
 registerInterceptor(client)
+axiosRetry(client)
 
 const MAX_REQUESTS = 500
 const NULL_ADDRESS = '0x0000000000000000000000000000000000000000'
