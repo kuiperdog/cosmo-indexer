@@ -62,13 +62,13 @@ getContracts(processor)
 
             const hierarchy = [ Collection.name, Objekt.name, Transfer.name ]
             for (let key of new Set([ ...hierarchy, ...entities.keys() ])) {
-                if (!entities.has(key))
+                if (!entities.has(key) || !entities.get(key)!.length)
                     continue
 
                 const data = entities.get(key)!
                 await ctx.store.save(data)
 
-                if (data.length)
+                if (data.length > 1)
                     ctx.log.info(`Saved ${data.length} entities of type "${key}"`)
                 else
                     ctx.log.info(`Saved 1 ${key} entity with ID "${data[0].id}"`)
