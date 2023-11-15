@@ -9,9 +9,9 @@ import axios, { AxiosResponse } from 'axios'
 import axiosRetry from 'axios-retry'
 
 const client = axios.create({
-    validateStatus: () => { return true }
+    validateStatus: (status) => { return (status >= 200 && status < 300) || status == 404 }
 })
-axiosRetry(client, { retryDelay: axiosRetry.exponentialDelay })
+axiosRetry(client)
 
 const MAX_REQUESTS = 500
 const NULL_ADDRESS = '0x0000000000000000000000000000000000000000'
