@@ -11,7 +11,7 @@ import axiosRetry from 'axios-retry'
 const client = axios.create({
     validateStatus: () => { return true }
 })
-axiosRetry(client)
+axiosRetry(client, { retryDelay: axiosRetry.exponentialDelay })
 
 const MAX_REQUESTS = 500
 const NULL_ADDRESS = '0x0000000000000000000000000000000000000000'
