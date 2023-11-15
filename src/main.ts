@@ -135,12 +135,12 @@ async function processComoTransfer(log: Log, data: Map<string, Entity[]>, store:
         let entry = data.get(Como.name)?.find(c => (c as Como).contract === log.address && (c as Como).owner === event.from)
 
         if (entry) {
-            (entry as Como).balance = BigInt(Math.min(0, Number((entry as Como).balance - event.value)))
+            (entry as Como).balance = BigInt(Math.max(0, Number((entry as Como).balance - event.value)))
         } else {
             entry = await store.findOneBy(Como, { contract: log.address, owner: event.from })
 
             if (entry) {
-                (entry as Como).balance = BigInt(Math.min(0, Number((entry as Como).balance - event.value)))
+                (entry as Como).balance = BigInt(Math.max(0, Number((entry as Como).balance - event.value)))
                 data.get(Como.name)?.push(entry)
             } else { 
                 data.get(Como.name)?.push(new Como({
