@@ -27,14 +27,12 @@ getContracts(processor)
                         case objektContract.events.Transfer.topic:
                             if (contracts.Objekt.includes(log.address))
                                 await processObjektTransfer(log, entities, ctx.store)
+                            if (contracts.Como.includes(log.address))
+                                await processComoTransfer(log, entities, ctx.store)
                             break
                         case governorContract.events.Voted.topic:
                             if (contracts.Governor.includes(log.address))
                                 await processVote(log, entities)
-                            break
-                        case comoContract.events.Transfer.topic:
-                            if (contracts.Como.includes(log.address))
-                                await processComoTransfer(log, entities, ctx.store)
                             break
                         default:
                             break
