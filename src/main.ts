@@ -134,9 +134,7 @@ async function processComoTransfer(log: Log, data: Map<string, Entity[]>, store:
         data.set(Como.name, [])
     
     if (event.from !== NULL_ADDRESS) {
-        let entry = data.get(Como.name)?.find(c => {
-            (c as Como).contract === log.address && (c as Como).owner === event.from
-        })
+        let entry = data.get(Como.name)?.find(c => (c as Como).contract === log.address && (c as Como).owner === event.from)
 
         if (entry) {
             (entry as Como).balance = BigInt(Math.min(0, Number((entry as Como).balance - event.value)))
@@ -158,9 +156,7 @@ async function processComoTransfer(log: Log, data: Map<string, Entity[]>, store:
     }
 
     if (event.to !== NULL_ADDRESS) {
-        let entry = data.get(Como.name)?.find(c => {
-            (c as Como).contract === log.address && (c as Como).owner === event.to
-        })
+        let entry = data.get(Como.name)?.find(c => (c as Como).contract === log.address && (c as Como).owner === event.to)
 
         if (entry) {
             (entry as Como).balance = (entry as Como).balance + event.value
@@ -209,11 +205,11 @@ async function processReveal(txn: Transaction, data: Map<string, Entity[]>, stor
         data.set(Vote.name, [])
 
     for (let i = 0; i < method.data.length; i++) {
-        let vote = data.get(Vote.name)?.find(v => {
+        let vote = data.get(Vote.name)?.find(v =>
             (v as Vote).contract === txn.to &&
             (v as Vote).index === method.offset + BigInt(i) &&
             (v as Vote).poll === method.pollId
-        })
+        )
 
         if (vote) {
             (vote as Vote).candidate = Number(method.data[i].votedCandidateId)
