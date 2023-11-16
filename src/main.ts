@@ -85,16 +85,14 @@ async function processObjektTransfer(log: Log, data: Map<string, Entity[]>, stor
         || new Objekt({ id: token })
 
     objekt.owner = event.to
+    objekt.received = BigInt(log.block.timestamp)
     
-    const savedIndex = data.get(Objekt.name)?.findIndex(i => i.id === token)!
-    if (savedIndex > -1)
-        (data.get(Objekt.name)![savedIndex] as Objekt).owner = objekt.owner
-    else
+    if (!data.get(Objekt.name)?.find(i => i.id === token))
         data.get(Objekt.name)?.push(objekt)
 
     const transfer = new Transfer({
         id: log.id,
-        objekt: objekt as Objekt,
+        objekt: objekt,
         to: event.to,
         from: event.from,
         timestamp: BigInt(log.block.timestamp)

@@ -1,4 +1,5 @@
 import {Entity as Entity_, Column as Column_, PrimaryColumn as PrimaryColumn_, ManyToOne as ManyToOne_, Index as Index_} from "typeorm"
+import * as marshal from "./marshal"
 import {Collection} from "./collection.model"
 
 @Entity_()
@@ -23,4 +24,7 @@ export class Objekt {
     @Index_()
     @Column_("text", {nullable: true})
     owner!: string | undefined | null
+
+    @Column_("numeric", {transformer: marshal.bigintTransformer, nullable: true})
+    received!: bigint | undefined | null
 }

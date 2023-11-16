@@ -18,6 +18,7 @@ type Objekt @entity {
   serial: Int
   transferrable: Boolean
   owner: String @index
+  received: BigInt
 }
 
 type Transfer @entity {
