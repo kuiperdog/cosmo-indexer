@@ -1,5 +1,5 @@
-module.exports = class Data1699944953548 {
-    name = 'Data1699944953548'
+module.exports = class Data1700201010635 {
+    name = 'Data1700201010635'
 
     async up(db) {
         await db.query(`CREATE TABLE "collection" ("id" character varying NOT NULL, "artists" text array NOT NULL, "member" text NOT NULL, "season" text NOT NULL, "class" text NOT NULL, "number" text NOT NULL, "thumbnail" text NOT NULL, "front" text NOT NULL, "back" text NOT NULL, "text_color" text NOT NULL, "timestamp" numeric NOT NULL, CONSTRAINT "PK_ad3f485bbc99d875491f44d7c85" PRIMARY KEY ("id"))`)
@@ -8,9 +8,13 @@ module.exports = class Data1699944953548 {
         await db.query(`CREATE INDEX "IDX_d01899107849250643b52f2324" ON "collection" ("class") `)
         await db.query(`CREATE INDEX "IDX_caa038e191d0099a8795fe4d35" ON "collection" ("number") `)
         await db.query(`CREATE INDEX "IDX_7ea39ec05f738471a3e62b4181" ON "collection" ("timestamp") `)
-        await db.query(`CREATE TABLE "objekt" ("id" character varying NOT NULL, "serial" integer, "transferrable" boolean, "owner" text, "collection_id" character varying, CONSTRAINT "PK_a50fda223abd7f6ae55f2cf629f" PRIMARY KEY ("id"))`)
+        await db.query(`CREATE TABLE "objekt" ("id" character varying NOT NULL, "serial" integer, "transferrable" boolean, "owner" text, "minted" numeric, "received" numeric, "collection_id" character varying, CONSTRAINT "PK_a50fda223abd7f6ae55f2cf629f" PRIMARY KEY ("id"))`)
         await db.query(`CREATE INDEX "IDX_cc0196669f13f5958a307824a2" ON "objekt" ("collection_id") `)
+        await db.query(`CREATE INDEX "IDX_19209bac5cab521e9327f74013" ON "objekt" ("serial") `)
+        await db.query(`CREATE INDEX "IDX_415dbd13d07d50a384f01f3a95" ON "objekt" ("transferrable") `)
         await db.query(`CREATE INDEX "IDX_d2ddf18405b46538e169ab03e8" ON "objekt" ("owner") `)
+        await db.query(`CREATE INDEX "IDX_c15388072018ad941f79e7df4f" ON "objekt" ("minted") `)
+        await db.query(`CREATE INDEX "IDX_afdc2938b94ac20b0e242f6657" ON "objekt" ("received") `)
         await db.query(`CREATE TABLE "transfer" ("id" character varying NOT NULL, "from" text NOT NULL, "to" text NOT NULL, "timestamp" numeric NOT NULL, "objekt_id" character varying, CONSTRAINT "PK_fd9ddbdd49a17afcbe014401295" PRIMARY KEY ("id"))`)
         await db.query(`CREATE INDEX "IDX_98d4c0e33193fdd3edfc826c37" ON "transfer" ("objekt_id") `)
         await db.query(`CREATE INDEX "IDX_be54ea276e0f665ffc38630fc0" ON "transfer" ("from") `)
@@ -34,7 +38,11 @@ module.exports = class Data1699944953548 {
         await db.query(`DROP INDEX "public"."IDX_7ea39ec05f738471a3e62b4181"`)
         await db.query(`DROP TABLE "objekt"`)
         await db.query(`DROP INDEX "public"."IDX_cc0196669f13f5958a307824a2"`)
+        await db.query(`DROP INDEX "public"."IDX_19209bac5cab521e9327f74013"`)
+        await db.query(`DROP INDEX "public"."IDX_415dbd13d07d50a384f01f3a95"`)
         await db.query(`DROP INDEX "public"."IDX_d2ddf18405b46538e169ab03e8"`)
+        await db.query(`DROP INDEX "public"."IDX_c15388072018ad941f79e7df4f"`)
+        await db.query(`DROP INDEX "public"."IDX_afdc2938b94ac20b0e242f6657"`)
         await db.query(`DROP TABLE "transfer"`)
         await db.query(`DROP INDEX "public"."IDX_98d4c0e33193fdd3edfc826c37"`)
         await db.query(`DROP INDEX "public"."IDX_be54ea276e0f665ffc38630fc0"`)
