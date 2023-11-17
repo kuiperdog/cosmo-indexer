@@ -82,7 +82,7 @@ async function processObjektTransfer(log: Log, data: Map<string, Entity[]>, stor
 
     const objekt = data.get(Objekt.name)?.find(i => i.id === token) as Objekt
         || await store.get(Objekt, token)
-        || new Objekt({ id: token })
+        || new Objekt({ id: token, minted: BigInt(log.block.timestamp) })
 
     objekt.owner = event.to
     objekt.received = BigInt(log.block.timestamp)

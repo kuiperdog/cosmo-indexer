@@ -25,6 +25,10 @@ export class Objekt {
     @Column_("text", {nullable: true})
     owner!: string | undefined | null
 
+    @Index_()
+    @Column_("numeric", {transformer: marshal.bigintTransformer, nullable: true})
+    minted!: bigint | undefined | null
+
     @Column_("numeric", {transformer: marshal.bigintTransformer, nullable: true})
     received!: bigint | undefined | null
 }
