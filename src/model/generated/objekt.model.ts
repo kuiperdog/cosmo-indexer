@@ -15,9 +15,11 @@ export class Objekt {
     @ManyToOne_(() => Collection, {nullable: true})
     collection!: Collection | undefined | null
 
+    @Index_()
     @Column_("int4", {nullable: true})
     serial!: number | undefined | null
 
+    @Index_()
     @Column_("bool", {nullable: true})
     transferrable!: boolean | undefined | null
 
@@ -29,6 +31,7 @@ export class Objekt {
     @Column_("numeric", {transformer: marshal.bigintTransformer, nullable: true})
     minted!: bigint | undefined | null
 
+    @Index_()
     @Column_("numeric", {transformer: marshal.bigintTransformer, nullable: true})
     received!: bigint | undefined | null
 }
