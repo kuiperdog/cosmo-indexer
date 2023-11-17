@@ -280,8 +280,11 @@ async function populateData(data: Map<string, Entity[]>, store: Store, logger: L
                 transferrable: metadata.transferable
             })
 
-            for (const transfer of data.get(Transfer.name)?.filter(t => (t as Transfer).objekt.id === batch[i].id)!)
-                (transfer as Transfer).objekt = objekt
+            const transfers = data.get(Transfer.name)?.filter(t => (t as Transfer).objekt.id === batch[i].id)
+            if (transfers) {
+                for (const transfer of transfers)
+                    (transfer as Transfer).objekt = objekt
+            }
             
             data.get(Objekt.name)![data.get(Objekt.name)?.findIndex(o => o.id === batch[i].id)!] = objekt
         }
