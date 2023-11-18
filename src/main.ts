@@ -21,6 +21,8 @@ getContracts(processor)
         processor.run(new TypeormDatabase({supportHotBlocks: true}), async (ctx) => {
             const entities = new Map<string, Entity[]>()
 
+            ctx.log.debug(`Processing ${ctx.blocks.length} blocks at height ${ctx.blocks[0].header.height}`)
+
             for (let block of ctx.blocks) {
                 for (let log of block.logs) {
                     switch (log.topics[0]) {
@@ -43,11 +45,11 @@ getContracts(processor)
                     switch (transaction.sighash) {
                         case objektContract.functions.batchUpdateObjektTransferrability.sighash:
                             if (contracts.Objekt.includes(transaction.to))
-                                await processTransferabilityUpdate(transaction, entities, ctx.store)
+                                await processTransferabilityUpdate(transaction, entities, ctx.store, ctx.log)
                             break
                         case governorContract.functions.reveal.sighash:
                             if (contracts.Governor.includes(transaction.to))
-                                await processReveal(transaction, entities, ctx.store)
+                                await processReveal(transaction, entities, ctx.store, ctx.log)
                             break
                         default:
                             break
@@ -174,8 +176,10 @@ async function processComoTransfer(log: Log, data: Map<string, Entity[]>, store:
     }
 }
 
-async function processTransferabilityUpdate(txn: Transaction, data: Map<string, Entity[]>, store: Store) {
+async function processTransferabilityUpdate(txn: Transaction, data: Map<string, Entity[]>, store: Store, log: Logger) {
     const method = objektContract.functions.batchUpdateObjektTransferrability.decode(txn.input)
+
+    log.debug(`Updating transferability of ${method.tokenIds.length} Objekts`)
 
     if (!data.has(Objekt.name))
         data.set(Objekt.name, [])
@@ -194,8 +198,10 @@ async function processTransferabilityUpdate(txn: Transaction, data: Map<string, 
     }
 }
 
-async function processReveal(txn: Transaction, data: Map<string, Entity[]>, store: Store) {
+async function processReveal(txn: Transaction, data: Map<string, Entity[]>, store: Store, log: Logger) {
     const method = governorContract.functions.reveal.decode(txn.input)
+
+    log.debug(`Revealing ${method.data.length} votes`)
 
     if (!data.has(Vote.name))
         data.set(Vote.name, [])
@@ -223,11 +229,15 @@ async function processReveal(txn: Transaction, data: Map<string, Entity[]>, stor
     }
 }
 
-async function populateData(data: Map<string, Entity[]>, store: Store, logger: Logger) {
+async function populateData(data: Map<string, Entity[]>, store: Store, log: Logger) {
     if (!data.has(Objekt.name))
         return
 
     const unpopulated = data.get(Objekt.name)?.filter(o => !(o as Objekt).collection)
+    if (!unpopulated)
+        return
+
+    log.debug(`Populating metadata of ${unpopulated.length} Objekts`)
 
     for (let i = 0; i < unpopulated!.length; i += MAX_REQUESTS) {
         const batch = unpopulated!.slice(i, i + MAX_REQUESTS)
@@ -239,7 +249,7 @@ async function populateData(data: Map<string, Entity[]>, store: Store, logger: L
 
         for (let i = 0; i < requests.length; i++) {
             if (requests[i].status === 404 || !requests[i].data || !requests[i].data.objekt) {
-                logger.warn(`Failed to fetch metadata for Objekt of ID ${batch[i].id}`)
+                log.warn(`Failed to fetch metadata for Objekt of ID ${batch[i].id}`)
                 continue
             }
 
