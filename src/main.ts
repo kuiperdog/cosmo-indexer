@@ -21,20 +21,20 @@ getContracts(processor)
         processor.run(new TypeormDatabase({supportHotBlocks: true}), async (ctx) => {
             const entities = new Map<string, Entity[]>()
 
-            ctx.log.debug(`Processing ${ctx.blocks.length} blocks at height ${ctx.blocks[0].header.height}`)
+            ctx.log.info(`Processing ${ctx.blocks.length} blocks at height ${ctx.blocks[0].header.height}`)
 
             for (let block of ctx.blocks) {
                 for (let log of block.logs) {
                     switch (log.topics[0]) {
                         case objektContract.events.Transfer.topic:
                             if (contracts.Objekt.includes(log.address))
-                                await processObjektTransfer(log, entities, ctx.store)
+                                await processObjektTransfer(log, entities, ctx.store, ctx.log)
                             if (contracts.Como.includes(log.address))
-                                await processComoTransfer(log, entities, ctx.store)
+                                await processComoTransfer(log, entities, ctx.store, ctx.log)
                             break
                         case governorContract.events.Voted.topic:
                             if (contracts.Governor.includes(log.address))
-                                await processVote(log, entities)
+                                await processVote(log, entities, ctx.log)
                             break
                         default:
                             break
@@ -75,9 +75,11 @@ getContracts(processor)
         })
     })
 
-async function processObjektTransfer(log: Log, data: Map<string, Entity[]>, store: Store) {
+async function processObjektTransfer(log: Log, data: Map<string, Entity[]>, store: Store, logger: Logger) {
     const event = objektContract.events.Transfer.decode(log)
     const token = event.tokenId.toString()
+
+    logger.info(`Processing Objekt transfer from ${event.from} to ${event.to} of ID ${token}`)
 
     if (!data.has(Objekt.name))
         data.set(Objekt.name, [])
@@ -106,8 +108,10 @@ async function processObjektTransfer(log: Log, data: Map<string, Entity[]>, stor
         data.set(Transfer.name, [transfer])
 }
 
-async function processVote(log: Log, data: Map<string, Entity[]>) {
+async function processVote(log: Log, data: Map<string, Entity[]>, logger: Logger) {
     const event = governorContract.events.Voted.decode(log)
+
+    logger.info(`Processing vote from ${event.voter} to ${log.address}`)
 
     const vote = new Vote({
         id: log.id,
@@ -125,8 +129,10 @@ async function processVote(log: Log, data: Map<string, Entity[]>) {
         data.set(Vote.name, [vote])
 }
 
-async function processComoTransfer(log: Log, data: Map<string, Entity[]>, store: Store) {
+async function processComoTransfer(log: Log, data: Map<string, Entity[]>, store: Store, logger: Logger) {
     const event = comoContract.events.Transfer.decode(log)
+
+    logger.info(`Processing Como transfer from ${event.from} to ${event.to}`)
 
     if (!data.has(Como.name))
         data.set(Como.name, [])
@@ -176,10 +182,10 @@ async function processComoTransfer(log: Log, data: Map<string, Entity[]>, store:
     }
 }
 
-async function processTransferabilityUpdate(txn: Transaction, data: Map<string, Entity[]>, store: Store, log: Logger) {
+async function processTransferabilityUpdate(txn: Transaction, data: Map<string, Entity[]>, store: Store, logger: Logger) {
     const method = objektContract.functions.batchUpdateObjektTransferrability.decode(txn.input)
 
-    log.debug(`Updating transferability of ${method.tokenIds.length} Objekts`)
+    logger.info(`Updating transferability of ${method.tokenIds.length} Objekts`)
 
     if (!data.has(Objekt.name))
         data.set(Objekt.name, [])
@@ -198,10 +204,10 @@ async function processTransferabilityUpdate(txn: Transaction, data: Map<string, 
     }
 }
 
-async function processReveal(txn: Transaction, data: Map<string, Entity[]>, store: Store, log: Logger) {
+async function processReveal(txn: Transaction, data: Map<string, Entity[]>, store: Store, logger: Logger) {
     const method = governorContract.functions.reveal.decode(txn.input)
 
-    log.debug(`Revealing ${method.data.length} votes`)
+    logger.info(`Revealing ${method.data.length} votes`)
 
     if (!data.has(Vote.name))
         data.set(Vote.name, [])
@@ -229,7 +235,7 @@ async function processReveal(txn: Transaction, data: Map<string, Entity[]>, stor
     }
 }
 
-async function populateData(data: Map<string, Entity[]>, store: Store, log: Logger) {
+async function populateData(data: Map<string, Entity[]>, store: Store, logger: Logger) {
     if (!data.has(Objekt.name))
         return
 
@@ -237,7 +243,7 @@ async function populateData(data: Map<string, Entity[]>, store: Store, log: Logg
     if (!unpopulated)
         return
 
-    log.debug(`Populating metadata of ${unpopulated.length} Objekts`)
+    logger.info(`Populating metadata of ${unpopulated.length} Objekts`)
 
     for (let i = 0; i < unpopulated!.length; i += MAX_REQUESTS) {
         const batch = unpopulated!.slice(i, i + MAX_REQUESTS)
@@ -249,7 +255,7 @@ async function populateData(data: Map<string, Entity[]>, store: Store, log: Logg
 
         for (let i = 0; i < requests.length; i++) {
             if (requests[i].status === 404 || !requests[i].data || !requests[i].data.objekt) {
-                log.warn(`Failed to fetch metadata for Objekt of ID ${batch[i].id}`)
+                logger.warn(`Failed to fetch metadata for Objekt of ID ${batch[i].id}`)
                 continue
             }
 
