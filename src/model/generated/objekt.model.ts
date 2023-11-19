@@ -1,6 +1,6 @@
-import {Entity as Entity_, Column as Column_, PrimaryColumn as PrimaryColumn_, ManyToOne as ManyToOne_, Index as Index_, OneToMany as OneToMany_} from "typeorm"
+import {Entity as Entity_, Column as Column_, PrimaryColumn as PrimaryColumn_, ManyToOne as ManyToOne_, Index as Index_} from "typeorm"
+import * as marshal from "./marshal"
 import {Collection} from "./collection.model"
-import {Transfer} from "./transfer.model"
 
 @Entity_()
 export class Objekt {
@@ -13,11 +13,25 @@ export class Objekt {
 
     @Index_()
     @ManyToOne_(() => Collection, {nullable: true})
-    collection!: Collection
+    collection!: Collection | undefined | null
 
-    @Column_("int4", {nullable: false})
-    serial!: number
+    @Index_()
+    @Column_("int4", {nullable: true})
+    serial!: number | undefined | null
 
-    @OneToMany_(() => Transfer, e => e.objekt)
-    transfers!: Transfer[]
+    @Index_()
+    @Column_("bool", {nullable: true})
+    transferrable!: boolean | undefined | null
+
+    @Index_()
+    @Column_("text", {nullable: true})
+    owner!: string | undefined | null
+
+    @Index_()
+    @Column_("numeric", {transformer: marshal.bigintTransformer, nullable: true})
+    minted!: bigint | undefined | null
+
+    @Index_()
+    @Column_("numeric", {transformer: marshal.bigintTransformer, nullable: true})
+    received!: bigint | undefined | null
 }

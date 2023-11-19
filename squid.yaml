@@ -1,7 +1,7 @@
 manifestVersion: subsquid.io/v0.1
 name: cosmo
-version: 1
-description: 'An Objekt token and Gravity vote indexer for Nova'
+version: 2
+description: 'An Objekt token, COMO balance, and Gravity vote indexer for Nova'
 build: 
 deploy:
   addons:

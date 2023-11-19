@@ -1,38 +1,49 @@
 type Collection @entity {
   id: ID!
+  artists: [String!]!
+  member: String! @index
+  season: String! @index
+  class: String! @index
+  number: String! @index
   thumbnail: String!
   front: String!
   back: String!
-  artists: [String!]!
-  class: String! @index
-  member: String! @index
-  season: String! @index
-  number: String! @index
   textColor: String!
   timestamp: BigInt! @index
-  objekts: [Objekt!]! @derivedFrom(field: "collection")
 }
 
 type Objekt @entity {
   id: ID!
-  collection: Collection!
-  serial: Int!
-  transfers: [Transfer!]! @derivedFrom(field: "objekt")
+  collection: Collection @index
+  serial: Int @index
+  transferrable: Boolean @index
+  owner: String @index
+  minted: BigInt @index
+  received: BigInt @index
 }
 
 type Transfer @entity {
   id: ID!
-  objekt: Objekt!
+  objekt: Objekt! @index
   from: String! @index
   to: String! @index
-  timestamp: BigInt! @index
+  timestamp: BigInt!
 }
 
 type Vote @entity {
   id: ID!
-  contract: String! @index
-  poll: BigInt! @index
-  amount: BigInt! @index
   from: String! @index
-  timestamp: BigInt! @index
+  contract: String!
+  poll: BigInt!
+  index: BigInt! @index
+  amount: BigInt!
+  candidate: Int
+  timestamp: BigInt!
+}
+
+type Como @entity {
+  id: ID!
+  contract: String! @index
+  owner: String! @index
+  balance: BigInt!
 }
