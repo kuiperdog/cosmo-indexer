@@ -33,17 +33,17 @@ type Transfer @entity {
 type Vote @entity {
   id: ID!
   from: String! @index
-  contract: String!
-  poll: BigInt!
+  contract: String! @index
+  poll: BigInt! @index
   index: BigInt! @index
-  amount: BigInt!
-  candidate: Int
-  timestamp: BigInt!
+  amount: BigInt! @index
+  candidate: Int @index
+  timestamp: BigInt! @index
 }
 
 type Como @entity {
   id: ID!
   contract: String! @index
   owner: String! @index
-  balance: BigInt!
+  balance: BigInt! @index
 }
