@@ -18,6 +18,7 @@ export class Como {
     @Column_("text", {nullable: false})
     owner!: string
 
+    @Index_()
     @Column_("numeric", {transformer: marshal.bigintTransformer, nullable: false})
     balance!: bigint
 }
