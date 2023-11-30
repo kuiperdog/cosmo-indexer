@@ -9,7 +9,6 @@ type Collection @entity {
   front: String!
   back: String!
   textColor: String!
-  backgroundColor: String!
   timestamp: BigInt! @index
 }
 

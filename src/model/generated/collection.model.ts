@@ -41,9 +41,6 @@ export class Collection {
     @Column_("text", {nullable: false})
     textColor!: string
 
-    @Column_("text", {nullable: false})
-    backgroundColor!: string
-
     @Index_()
     @Column_("numeric", {transformer: marshal.bigintTransformer, nullable: false})
     timestamp!: bigint
