@@ -28,7 +28,7 @@ type Transfer @entity {
   objekt: Objekt! @index
   from: String! @index
   to: String! @index
-  timestamp: BigInt!
+  timestamp: BigInt! @index
 }
 
 type Vote @entity {
