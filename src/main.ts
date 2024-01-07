@@ -281,6 +281,7 @@ async function populateData(data: Map<string, Entity[]>, store: Store, logger: L
                     front: metadata.frontImage,
                     back: metadata.backImage,
                     textColor: metadata.textColor,
+                    backgroundColor: metadata.backgroundColor,
                     timestamp: (data.get(Transfer.name)?.find(t => (t as Transfer).objekt.id === batch[i].id) as Transfer).timestamp
                 })
                 if (data.has(Collection.name))
