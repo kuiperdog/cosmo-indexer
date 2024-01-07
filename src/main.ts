@@ -15,6 +15,7 @@ axiosRetry(client)
 
 const MAX_REQUESTS = 500
 const NULL_ADDRESS = '0x0000000000000000000000000000000000000000'
+const CREATOR_ADDRESS = '0xD5fc87DD8494d6B657bF0DE20111235d983CEC84'
 
 getContracts(processor)
     .then(contracts => {
@@ -30,7 +31,7 @@ getContracts(processor)
                             if (contracts.Objekt.includes(log.address))
                                 await processObjektTransfer(log, entities, ctx.store, ctx.log)
                             if (contracts.Como.includes(log.address))
-                                await processComoTransfer(log, entities, ctx.store, ctx.log)
+                                await processComoTransfer(log, entities, contracts, ctx.store, ctx.log,)
                             break
                         case governorContract.events.Voted.topic:
                             if (contracts.Governor.includes(log.address))
@@ -129,7 +130,7 @@ async function processVote(log: Log, data: Map<string, Entity[]>, logger: Logger
         data.set(Vote.name, [vote])
 }
 
-async function processComoTransfer(log: Log, data: Map<string, Entity[]>, store: Store, logger: Logger) {
+async function processComoTransfer(log: Log, data: Map<string, Entity[]>, contracts: any, store: Store, logger: Logger) {
     const event = comoContract.events.Transfer.decode(log)
 
     logger.info(`Processing Como transfer from ${event.from} to ${event.to}`)
@@ -159,7 +160,7 @@ async function processComoTransfer(log: Log, data: Map<string, Entity[]>, store:
         }
     }
 
-    if (event.to !== NULL_ADDRESS) {
+    if (event.from !== NULL_ADDRESS && event.to !== CREATOR_ADDRESS && !contracts.Governor.includes(event.to) && !contracts.CommunityPool.includes(event.to)) {
         let entry = data.get(Como.name)?.find(c => (c as Como).contract === log.address && (c as Como).owner === event.to)
 
         if (entry) {
