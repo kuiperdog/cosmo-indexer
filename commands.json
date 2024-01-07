@@ -25,11 +25,11 @@
       "migration:generate": {
         "description": "Generate a DB migration matching the TypeORM entities",
         "deps": ["build", "migration:clean"],
-        "cmd": ["squid-typeorm-migration", "generate"],
+        "cmd": ["squid-typeorm-migration", "generate"]
       },
       "migration:clean": {
         "description": "Clean the migrations folder",
-        "cmd": ["npx", "--yes", "rimraf", "./db/migrations"],
+        "cmd": ["npx", "--yes", "rimraf", "./db/migrations"]
       },
       "migration": {
         "deps": ["build"],
@@ -57,11 +57,12 @@
       },
       "serve": {
         "description": "Start the GraphQL API server",
-        "cmd": ["squid-graphql-server"]
+        "cmd": ["squid-graphql-server", "--subscriptions"]
       },
       "serve:prod": {
         "description": "Start the GraphQL API server with caching and limits",
         "cmd": ["squid-graphql-server",
+          "--subscriptions",
           "--dumb-cache", "in-memory",
           "--dumb-cache-ttl", "1000",
           "--dumb-cache-size", "100",
