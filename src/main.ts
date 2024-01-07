@@ -138,7 +138,7 @@ async function processComoTransfer(log: Log, data: Map<string, Entity[]>, contra
     if (!data.has(Como.name))
         data.set(Como.name, [])
     
-    if (event.from !== NULL_ADDRESS) {
+    if (event.from !== NULL_ADDRESS && event.from !== CREATOR_ADDRESS && !contracts.Governor.includes(event.from) && !contracts.CommunityPool.includes(event.from)) {
         let entry = data.get(Como.name)?.find(c => (c as Como).contract === log.address && (c as Como).owner === event.from)
 
         if (entry) {
@@ -160,7 +160,7 @@ async function processComoTransfer(log: Log, data: Map<string, Entity[]>, contra
         }
     }
 
-    if (event.from !== NULL_ADDRESS && event.to !== CREATOR_ADDRESS && !contracts.Governor.includes(event.to) && !contracts.CommunityPool.includes(event.to)) {
+    if (event.to !== NULL_ADDRESS && event.to !== CREATOR_ADDRESS && !contracts.Governor.includes(event.to) && !contracts.CommunityPool.includes(event.to)) {
         let entry = data.get(Como.name)?.find(c => (c as Como).contract === log.address && (c as Como).owner === event.to)
 
         if (entry) {
