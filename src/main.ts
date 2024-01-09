@@ -306,5 +306,7 @@ async function populateData(data: Map<string, Entity[]>, store: Store, logger: L
             
             data.get(Objekt.name)![data.get(Objekt.name)?.findIndex(o => o.id === batch[i].id)!] = objekt
         }
+
+        logger.info(`Batch ${i + 1} completed`)
     }
 }
